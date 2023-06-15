@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MDUI 聊天界面</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mdui/0.4.3/css/mdui.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mdui/0.4.3/js/mdui.min.js"></script>
+</head>
+<body class="mdui-appbar-with-toolbar mdui-theme-primary-indigo mdui-theme-accent-pink">
+
+<header class="mdui-appbar mdui-appbar-fixed">
+  <div class="mdui-toolbar mdui-color-theme">
+    <a href="javascript:;" class="mdui-btn mdui-btn-icon" mdui-drawer="{target: '#user-drawer'}">
+      <i class="mdui-icon material-icons">menu</i>
+    </a>
+    <span class="mdui-typo-title">聊天界面</span>
+    <div class="mdui-toolbar-spacer"></div>
+    <a href="javascript:;" class="mdui-btn mdui-btn-icon" mdui-tooltip="{content: '添加用户', position: 'left'}" onclick="addUser('测试')">
+      <i class="mdui-icon material-icons">add_circle</i>
+    </a>
+  </div>
+</header>
+
+<div class="mdui-drawer" id="user-drawer">
+  <ul class="mdui-list">
+<!--    <li class="mdui-list-item mdui-ripple" id="user-1">用户 1</li>-->
+  </ul>
+</div>
+
+<main class="mdui-container">
+  <div id="chat-container" class="mdui-typo" style="padding-top: 16px;">
+
+    <div id="chatMessage" class="mdui-typo" style="padding-top: 16px">
+          <div id="MessageTitle"></div>
+    </div>
+  </div>
+  <div class="mdui-textfield">
+    <textarea class="mdui-textfield-input" id="message-input" placeholder="输入消息"></textarea>
+  </div>
+  <button class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-theme-accent" id="send-message" onclick="sendMessage()">发送</button>
+</main>
+
+<script>
+
+  let NowUser = 0
+function addUser(){
+  mdui.prompt('请输入用户ID', '添加用户',
+          function (value) {
+            const userList = document.querySelector('.mdui-list');
+            const newUser = document.createElement('li');
+            const xhr =new XMLHttpRequest();
+            xhr.open("POST","/queryUserName",true);
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            xhr.onreadystatechange = function() {
+              if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+                const response = JSON.parse(xhr.responseText);
+                if (response.success) {
+                  newUser.className = "mdui-list-item mdui-ripple user-list";
+                  newUser.value=value
+                  newUser.textContent = response.message;
+                  newUser.onclick=function (){
+                    SwitchUser(this)
+                  };
+                  userList.appendChild(newUser);
+                } else {
+                  mdui.alert(response.message);
+                }
+              }
+            }
+            xhr.send("userid="+value);
+          },function (value){
+
+          }
+  );
+}
+  let ChatContainer = document.getElementById('MessageTitle')
+  function SwitchUser(doc) {
+    NowUser = doc.value;
+    ChatContainer.innerHTML = `<p style="font-size: 21px">当前聊天对象：${doc.textContent}</p>`;
+    RefreshMessage();
+  }
+
+setInterval(RefreshMessage, 1000);
+
+
+  function RefreshMessage(){
+    if (NowUser===0){
+      return
+    }
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", "/getMessage?userid=" + NowUser, true);
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState === 4 && xhr.status === 200) {
+        let ChatMessage = document.getElementById('chatMessage');
+        let Message = ChatMessage.getElementsByTagName("p");
+        while (Message.length > 0) {
+          Message[0].parentNode.removeChild(Message[0]);
+        }
+        let messages = JSON.parse(xhr.responseText);
+        for (let j = 0; j < messages.length; j++) {
+          let message = messages[j];
+          const p = document.createElement("p");
+
+          const b = document.createElement("b");
+          b.textContent = message.sendName.toString() + ": ";
+
+          const text = document.createTextNode(message.messageRow.toString()+"  ");
+
+          const iElement = document.createElement("i");
+          iElement.style.fontSize = "1px";
+          iElement.style.color = "rgba(3,14,64,0.35)";
+          iElement.textContent = message.sendTime.toString();
+
+          p.appendChild(b);
+          p.appendChild(text);
+          p.appendChild(iElement);
+          console.log(p)
+          ChatMessage.appendChild(p);
+        }
+      }
+    };
+    xhr.send();
+  }
+
+  async function sendMessage() {
+    let MessageRow = document.getElementById('message-input')
+    const data = {
+      SendUserId: getCookieValue('userId'),
+      ReceiveUserId: NowUser,
+      MessageRow: MessageRow.value
+    };
+
+    const url = "/SendMessage";
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(data)
+    });
+
+    if (response.ok) {
+      const jsonResponse = await response.json();
+      console.log("Response: ", jsonResponse);
+      RefreshMessage()
+      MessageRow.value="";
+    } else {
+      console.log("Error sending POST request");
+      alert("发送失败")
+    }
+  }
+
+
+  function getCookieValue(key) {
+    // 将cookie字符串分解为键值对数组
+    var cookieArr = document.cookie.split(";");
+
+    // 遍历键值对数组，查找特定的键
+    for(var i = 0; i < cookieArr.length; i++) {
+      var cookiePair = cookieArr[i].split("=");
+      // 如果找到了特定的键，返回其值
+      if(key === cookiePair[0].trim()) {
+        return decodeURIComponent(cookiePair[1]);
+      }
+    }
+
+    // 如果没有找到特定的键，返回null
+    return null;
+  }
+</script>
+
+</body>
+</html>

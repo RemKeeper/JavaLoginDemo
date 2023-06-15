@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register Page</title>
+  <link rel="stylesheet" href="https://unpkg.com/mdui@1.0.2/dist/css/mdui.min.css" />
+  <style>
+    body {
+      background-image: url("http://127.0.0.1:8080/image/93780666_p0.jpg");
+      background-size: cover;
+      background-position: bottom;
+    }
+    .register-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+  </style>
+</head>
+<body class="mdui-theme-primary-indigo mdui-theme-accent-pink">
+
+<div class="mdui-container register-container" id="register-page">
+  <div class="mdui-card mdui-center" style="max-width: 400px">
+    <div class="mdui-card-header">
+      <h1 class="mdui-card-title mdui-text-center">账号注册</h1>
+    </div>
+    <div class="mdui-card-content">
+      <form class="mdui-textfield mdui-textfield-floating-label">
+        <label class="mdui-textfield-label">用户名</label>
+        <input class="mdui-textfield-input" type="text" name="username">
+      </form>
+      <form class="mdui-textfield mdui-textfield-floating-label">
+        <label class="mdui-textfield-label">密码</label>
+        <input class="mdui-textfield-input" type="password" name="password">
+      </form>
+      <form class="mdui-textfield mdui-textfield-floating-label">
+        <label class="mdui-textfield-label">确认密码</label>
+        <input class="mdui-textfield-input" type="password" name="confirm_password">
+      </form>
+      <form class="mdui-textfield mdui-textfield-floating-label">
+        <label class="mdui-textfield-label">邮箱</label>
+        <input class="mdui-textfield-input" type="email" name="email">
+      </form>
+    </div>
+    <div class="mdui-card-actions">
+      <button class="mdui-btn mdui-btn-raised mdui-btn-block mdui-color-theme-accent mdui-ripple"
+              onclick="register()">注册</button>
+    </div>
+  </div>
+</div>
+<div class="mdui-fab-wrapper" id="exampleFab">
+  <button class="mdui-fab mdui-ripple mdui-color-theme-accent " mdui-tooltip="{content: '登陆', position: 'top'}" onclick="window.location.href='../login'">
+    <i class="mdui-icon material-icons">arrow_back</i>
+  </button>
+</div>
+<script src="https://cdn.staticfile.org/mdui/0.4.3/js/mdui.min.js"></script>
+<script>
+
+  function register() {
+    const username = document.getElementsByName("username")[0].value.trim();
+    const password = document.getElementsByName("password")[0].value.trim();
+    const confirm_password = document.getElementsByName("confirm_password")[0].value.trim();
+    const email = document.getElementsByName("email")[0].value.trim();
+    if (username === "" || password === "" || confirm_password === "" || email === "") {
+      alert("请填写完整信息");
+    } else if (password !== confirm_password) {
+      alert("两次输入的密码不一致，请重新输入");
+    } else {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "/register", true);
+      xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+          const response = JSON.parse(xhr.responseText);
+          if (response.success) {
+            alert("注册成功");
+            window.location.href='../login';
+          } else {
+            alert(response.message);
+          }
+        }
+      };
+      xhr.send("username=" + encodeURIComponent(username) + "&password=" + encodeURIComponent(password) + "&email=" + encodeURIComponent(email));
+    }
+  }
+</script>
+</body>
+</html>
